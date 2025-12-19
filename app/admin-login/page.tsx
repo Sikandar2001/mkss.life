@@ -12,7 +12,10 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  // ✅ TYPE FIXED HERE
+  const handleLogin = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     setLoading(true);
 
@@ -22,14 +25,13 @@ export default function AdminLogin() {
       router.push("/admin");
     } catch (error) {
       alert("Invalid Admin Credentials ❌");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-gray-100">
-
       <form
         onSubmit={handleLogin}
         className="bg-white p-8 rounded-xl shadow-md w-full max-w-md"
@@ -44,6 +46,7 @@ export default function AdminLogin() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="border w-full mb-4 p-3 rounded-lg"
+          required
         />
 
         <input
@@ -52,6 +55,7 @@ export default function AdminLogin() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="border w-full mb-4 p-3 rounded-lg"
+          required
         />
 
         <button
@@ -62,7 +66,6 @@ export default function AdminLogin() {
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
-
     </div>
   );
 }
