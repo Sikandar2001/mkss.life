@@ -1,105 +1,128 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 
-// Firebase Auth import
-import { auth, googleProvider } from "@/app/lib/firebase";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+// Firebase
+import { auth } from "@/app/lib/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
+const db = getFirestore();
 
 export default function LoginPage() {
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // ---------------- Email Login ----------------
-  const handleLogin = async (e: any) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      alert("Login Successful!");
-      router.push("/");
-    } catch (error: any) {
-      alert(error.message);
-    }
-  };
+    setLoading(true);
 
-  // ---------------- Google Login ----------------
-  const handleGoogleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      alert("Google Login Successful!");
+      const emailKey = email.toLowerCase();
+
+      // ✅ STEP 1: LOGIN FROM AUTH (SOURCE OF TRUTH)
+      const cred = await signInWithEmailAndPassword(
+        auth,
+        emailKey,
+        password
+      );
+
+      const user = cred.user;
+
+      // ✅ STEP 2: ENSURE FIRESTORE DOC EXISTS
+      const userRef = doc(db, "users", emailKey);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) {
+        // 🔥 AUTO-FIX OLD USERS
+        await setDoc(userRef, {
+          uid: user.uid,
+          email: emailKey,
+          provider: "password",
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      alert("Login successful!");
       router.push("/");
+
     } catch (error: any) {
-      alert(error.message);
+      alert("Invalid email or password");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4">
-      <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-10">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
 
-        {/* Left Image */}
-        <div className="w-full h-full flex items-center justify-center">
-          <Image
-            src="/image/photo1.avif"
-            alt="Login Visual"
-            width={600}
-            height={600}
-            className="object-contain"
-          />
-        </div>
+        <Image
+          src="/image/photo1.avif"
+          alt="Login"
+          width={520}
+          height={520}
+          onError={(e) =>
+            ((e.target as HTMLImageElement).style.display = "none")
+          }
+        />
 
-        {/* Login Form */}
-        <div className="p-8 shadow-md rounded-md flex flex-col justify-center">
-          <h2 className="text-2xl font-semibold mb-6">Login to your account</h2>
+        <div className="max-w-md">
+          <h2 className="text-2xl font-semibold mb-2">
+            Log in to Exclusive
+          </h2>
 
-          <p className="text-sm mb-4">Enter your details below</p>
+          <p className="text-sm text-gray-500 mb-6">
+            Enter your details below
+          </p>
 
-          <form className="flex flex-col gap-4" onSubmit={handleLogin}>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="border p-3 rounded-md"
-                  value={email}                     // <- यहाँ ADD किया गया है
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+          <form onSubmit={handleLogin} className="space-y-5">
+            <input
+              type="email"
+              placeholder="Email"
+              className="border-b w-full py-2"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
 
-                <input
-                  type="password"
-                  placeholder="Password"
-                  className="border p-3 rounded-md"
-                  value={password}                  // <- यहाँ ADD किया गया है
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-
+            <input
+              type="password"
+              placeholder="Password"
+              className="border-b w-full py-2"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
 
             <button
-              type="submit"
-              className="bg-red-500 text-white py-3 rounded-md hover:bg-red-600 transition"
+              disabled={loading}
+              className="bg-red-500 text-white px-8 py-2 rounded-md"
             >
-              Login
+              {loading ? "Logging in..." : "Log in"}
             </button>
           </form>
 
-          {/* Google Login Button */}
-          <button
-            onClick={handleGoogleLogin}
-            className="border border-gray-400 py-3 rounded-md w-full mt-4 flex items-center justify-center gap-2 hover:bg-gray-100 transition"
-          >
-            <Image src="/image/google.png" width={24} height={24} alt="Google" />
-            Continue with Google
-          </button>
-
-          <p className="text-sm text-center mt-4">
+          <p className="text-sm mt-4">
             Don’t have an account?
-            <a href="/signup" className="text-blue-600 ml-1">Create Account</a>
+            <Link href="/signup" className="text-blue-600 ml-1">
+              Sign up
+            </Link>
           </p>
         </div>
-
       </div>
     </div>
   );

@@ -1,135 +1,148 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
-/* =======================
-   TYPES
-======================= */
 type CartItem = {
   id: string;
-  title?: string;
+  title: string;
   price: number;
   quantity: number;
   image?: string;
 };
 
 export default function CartPage() {
-  /* =======================
-     STATE (TYPED ✅)
-  ======================= */
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [couponMsg, setCouponMsg] = useState<string>("");
+  const [coupon, setCoupon] = useState("");
 
-  /* =======================
-     LOAD CART FROM LOCALSTORAGE
-  ======================= */
   useEffect(() => {
     const items = JSON.parse(
       localStorage.getItem("cartItems") || "[]"
-    ) as CartItem[];
-
+    );
     setCart(items);
   }, []);
 
-  /* =======================
-     UPDATE QUANTITY (FIXED TYPE)
-  ======================= */
-  const updateQty = (index: number, value: number | string) => {
+  const updateQty = (index: number, qty: number) => {
     const updated = [...cart];
-    updated[index].quantity = Number(value);
+    updated[index].quantity = qty;
     setCart(updated);
     localStorage.setItem("cartItems", JSON.stringify(updated));
   };
 
-  /* =======================
-     REMOVE ITEM
-  ======================= */
-  const removeItem = (index: number) => {
-    const updated = cart.filter((_, i) => i !== index);
-    setCart(updated);
-    localStorage.setItem("cartItems", JSON.stringify(updated));
-  };
-
-  /* =======================
-     TOTAL PRICE
-  ======================= */
-  const total = cart.reduce(
+  const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  if (cart.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-xl">
-        Cart is empty 🛒
-      </div>
-    );
-  }
-
-  /* =======================
-     UI
-  ======================= */
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex justify-center">
-      <div className="max-w-5xl w-full bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold mb-6">Your Cart</h1>
+    <div className="max-w-7xl mx-auto px-4 py-8">
 
-        <table className="w-full border text-sm mb-6">
-          <thead className="bg-gray-200">
+      {/* BREADCRUMB */}
+      <p className="text-sm text-gray-400 mb-6">
+        Home / <span className="text-black">Cart</span>
+      </p>
+
+      {/* TABLE */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border border-gray-300">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="p-3 border text-left">Product</th>
-              <th className="p-3 border">Price</th>
-              <th className="p-3 border">Qty</th>
-              <th className="p-3 border">Subtotal</th>
-              <th className="p-3 border">Action</th>
+              <th className="p-4 text-left font-medium">Product</th>
+              <th className="p-4 text-center font-medium">Price</th>
+              <th className="p-4 text-center font-medium">Quantity</th>
+              <th className="p-4 text-center font-medium">Subtotal</th>
             </tr>
           </thead>
-
           <tbody>
             {cart.map((item, index) => (
-              <tr key={item.id}>
-                <td className="p-3 border">{item.title}</td>
-                <td className="p-3 border">₹{item.price}</td>
-                <td className="p-3 border">
+              <tr key={item.id} className="border-t">
+                <td className="p-4 flex items-center gap-4">
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      className="w-12 h-12 object-contain"
+                    />
+                  )}
+                  {item.title}
+                </td>
+                <td className="p-4 text-center">
+                  ${item.price}
+                </td>
+                <td className="p-4 text-center">
                   <input
                     type="number"
                     min={1}
                     value={item.quantity}
                     onChange={(e) =>
-                      updateQty(index, e.target.value)
+                      updateQty(index, Number(e.target.value))
                     }
-                    className="w-16 border px-2 py-1 rounded"
+                    className="w-16 border border-gray-400 rounded px-2 py-1 text-center"
                   />
                 </td>
-                <td className="p-3 border">
-                  ₹{item.price * item.quantity}
-                </td>
-                <td className="p-3 border text-center">
-                  <button
-                    onClick={() => removeItem(index)}
-                    className="text-red-500 hover:underline"
-                  >
-                    Remove
-                  </button>
+                <td className="p-4 text-center">
+                  ${item.price * item.quantity}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
 
-        <div className="flex justify-between items-center">
-          <p className="text-lg font-semibold">
-            Total: ₹{total}
-          </p>
+      {/* ACTION BUTTONS */}
+      <div className="flex justify-between mt-6">
+        <Link
+          href="/"
+          className="border border-gray-400 px-6 py-2 text-sm"
+        >
+          Return To Shop
+        </Link>
 
-          <button className="bg-black text-white px-6 py-2 rounded-lg">
-            Checkout
+        <button className="border border-gray-400 px-6 py-2 text-sm">
+          Update Cart
+        </button>
+      </div>
+
+      {/* COUPON + CART TOTAL */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-12 items-start">
+
+        {/* COUPON */}
+        <div className="flex gap-4">
+          <input
+            value={coupon}
+            onChange={(e) => setCoupon(e.target.value)}
+            placeholder="Coupon Code"
+            className="border border-gray-400 px-4 py-2 w-full max-w-[220px]"
+          />
+          <button className="bg-red-500 text-white px-6 py-2">
+            Apply Coupon
           </button>
         </div>
 
-        {couponMsg && (
-          <p className="mt-4 text-green-600">{couponMsg}</p>
-        )}
+        {/* CART TOTAL */}
+        <div className="border border-gray-400 p-6 w-full max-w-[360px] ml-auto">
+          <h3 className="font-medium mb-4">Cart Total</h3>
+
+          <div className="flex justify-between text-sm mb-3">
+            <span>Subtotal:</span>
+            <span>${subtotal}</span>
+          </div>
+
+          <div className="flex justify-between text-sm mb-3">
+            <span>Shipping:</span>
+            <span>Free</span>
+          </div>
+
+          <hr className="my-3 border-gray-300" />
+
+          <div className="flex justify-between font-medium">
+            <span>Total:</span>
+            <span>${subtotal}</span>
+          </div>
+
+          <button className="mt-6 w-full bg-red-500 text-white py-2">
+            Proceed to checkout
+          </button>
+        </div>
       </div>
     </div>
   );
