@@ -27,7 +27,7 @@ export default function Header() {
       await signOut(auth);
       setProfileOpen(false);
       alert("Logged out successfully!");
-      router.push("/login"); // redirect
+      router.push("/auth/login"); // redirect
     } catch (error) {
       alert("Logout failed");
     }
@@ -52,7 +52,7 @@ export default function Header() {
           <Link href="/">Home</Link>
           <Link href="/contact">Contact</Link>
           <Link href="/about">About</Link>
-          <Link href="/signup">Sign Up</Link>
+          <Link href="/auth/signup">Sign Up</Link>
         </nav>
 
         {/* RIGHT */}
@@ -125,7 +125,7 @@ export default function Header() {
             <Link href="/">Home</Link>
             <Link href="/contact">Contact</Link>
             <Link href="/about">About</Link>
-            <Link href="/signup">Sign Up</Link>
+            <Link href="/auth/signup">Sign Up</Link>
           </nav>
         </div>
       )}

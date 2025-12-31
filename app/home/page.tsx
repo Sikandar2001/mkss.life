@@ -1,102 +1,85 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef } from "react";
+import {
+  Wrench,
+  ShoppingBag,
+  BriefcaseBusiness,
+  Gift,
+  Sofa,
+  Sparkles,
+  Lightbulb,
+} from "lucide-react";
 
-/* =======================
-   TYPES
-======================= */
-type Product = {
-  id: string;
-  title: string;
-  price: number;
-  image?: string;
-};
+const categories = [
+ 
+  { title: "Tools & Hardware", icon: Wrench },
+  { title: "Shoes & Accessories", icon: ShoppingBag },
+  { title: "Luggage, Bags & Cases", icon: BriefcaseBusiness },
+  { title: "Gifts & Crafts", icon: Gift },
+  { title: "Furniture", icon: Sofa },
+  { title: "Personal Care & Household", icon: Sparkles },
+  { title: "Lights & Lighting", icon: Lightbulb },
+];
 
 export default function HomePage() {
-  /* =======================
-     STATE
-  ======================= */
-  const [products, setProducts] = useState<Product[]>([]);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
-  /* =======================
-     DUMMY PRODUCTS (example)
-     👉 replace with Firestore later
-  ======================= */
-  useEffect(() => {
-    setProducts([
-      {
-        id: "1",
-        title: "Fresh Atta",
-        price: 250,
-      },
-      {
-        id: "2",
-        title: "Cooking Oil",
-        price: 180,
-      },
-      {
-        id: "3",
-        title: "Rice Pack",
-        price: 300,
-      },
-    ]);
-  }, []);
-
-  /* =======================
-     ADD TO CART (FIXED TYPE)
-  ======================= */
-  const addToCart = (product: Product) => {
-    const cart: (Product & { quantity: number })[] =
-      typeof window !== "undefined"
-        ? JSON.parse(localStorage.getItem("cartItems") || "[]")
-        : [];
-
-    const existing = cart.find(
-      (item) => item.id === product.id
-    );
-
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      cart.push({ ...product, quantity: 1 });
-    }
-
-    localStorage.setItem("cartItems", JSON.stringify(cart));
-    alert("Product added to cart 🛒");
+  const scroll = (dir: "left" | "right") => {
+    sliderRef.current?.scrollBy({
+      left: dir === "right" ? 320 : -320,
+      behavior: "smooth",
+    });
   };
 
-  /* =======================
-     UI
-  ======================= */
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-center mb-10">
-        Products
-      </h1>
+    <main>
+      {/* ===== EXISTING HOME CONTENT ===== */}
+      <section className="min-h-[60vh] flex items-center justify-center">
+        <h1 className="text-3xl font-bold">Home Page Content</h1>
+      </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {products.map((product) => (
-          <div
-            key={product.id}
-            className="bg-white rounded-lg shadow-md p-6"
-          >
-            <h2 className="text-xl font-semibold mb-2">
-              {product.title}
-            </h2>
+      {/* ===== CATEGORIES SLIDER (BOTTOM) ===== */}
+      <section className="relative bg-white py-12 mt-10">
+        {/* LEFT ARROW */}
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow flex items-center justify-center"
+        >
+          ←
+        </button>
 
-            <p className="text-gray-700 mb-4">
-              ₹{product.price}
-            </p>
+        {/* SLIDER (UI SAME) */}
+        <div
+          ref={sliderRef}
+          className="flex gap-8 px-10 overflow-x-auto scrollbar-hide"
+        >
+          {categories.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={index}
+                className="min-w-[130px] flex flex-col items-center text-center cursor-pointer"
+              >
+                <div className="w-24 h-24 rounded-full border flex items-center justify-center">
+                  <Icon className="w-7 h-7 text-gray-700" />
+                </div>
+                <p className="mt-3 text-sm text-gray-700 leading-tight">
+                  {item.title}
+                </p>
+              </div>
+            );
+          })}
+        </div>
 
-            <button
-              onClick={() => addToCart(product)}
-              className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
-            >
-              Add to Cart
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
+        {/* RIGHT ARROW */}
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow flex items-center justify-center"
+        >
+          →
+        </button>
+      </section>
+    </main>
   );
 }

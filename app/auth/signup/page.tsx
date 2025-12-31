@@ -6,20 +6,13 @@ import Image from "next/image";
 import Link from "next/link";
 
 // Firebase
-import { auth, googleProvider } from "@/app/lib/firebase";
-import {
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-} from "firebase/auth";
-
+import { auth } from "@/app/lib/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import {
   getFirestore,
-  collection,
-  query,
-  where,
-  getDocs,
   doc,
   setDoc,
+  getDoc,
   serverTimestamp,
 } from "firebase/firestore";
 
@@ -34,74 +27,50 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ================= EMAIL + PHONE UNIQUE SIGNUP =================
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // 🔴 STEP 1: PHONE NUMBER CHECK
-      if (phone) {
-        const phoneQuery = query(
-          collection(db, "users"),
-          where("phone", "==", phone)
-        );
+      const emailKey = email.toLowerCase();
 
-        const phoneSnap = await getDocs(phoneQuery);
+      // 🔒 STEP 1: CHECK IF USER ALREADY EXISTS IN FIRESTORE
+      const userRef = doc(db, "users", emailKey);
+      const snap = await getDoc(userRef);
 
-        if (!phoneSnap.empty) {
-          alert("This phone number is already registered.");
-          setLoading(false);
-          return;
-        }
+      if (snap.exists()) {
+        alert("Account already exists. Please login.");
+        setLoading(false);
+        router.push("/auth/login");
+        return;
       }
 
-      // 🔴 STEP 2: EMAIL SIGNUP (Firebase auto-checks duplicate email)
-      const userCred = await createUserWithEmailAndPassword(
+      // ✅ STEP 2: CREATE USER IN FIREBASE AUTH
+      const cred = await createUserWithEmailAndPassword(
         auth,
-        email,
+        emailKey,
         password
       );
 
-      const user = userCred.user;
-
-      // 🔴 STEP 3: SAVE USER IN FIRESTORE
-      await setDoc(doc(db, "users", user.uid), {
+      // ✅ STEP 3: SAVE USER IN FIRESTORE
+      await setDoc(userRef, {
+        uid: cred.user.uid,
         name,
-        email,
+        email: emailKey,
         phone,
+        provider: "password",
         createdAt: serverTimestamp(),
       });
 
-      alert("Account created successfully!");
-      router.push("/login");
+      alert("Signup successful! Please login.");
+
+      // 🔥 STEP 4: AUTO REDIRECT TO LOGIN PAGE
+      router.push("/auth/login");
 
     } catch (error: any) {
-      if (error.code === "auth/email-already-in-use") {
-        alert("This email is already registered.");
-      } else {
-        alert(error.message);
-      }
+      alert(error.message || "Signup failed");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // ================= GOOGLE SIGNUP =================
-  const handleGoogleSignup = async () => {
-    try {
-      const res = await signInWithPopup(auth, googleProvider);
-      const user = res.user;
-
-      const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, {
-        email: user.email,
-        createdAt: serverTimestamp(),
-      });
-
-      router.push("/");
-    } catch (error: any) {
-      alert(error.message);
     }
   };
 
@@ -109,7 +78,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
 
-        {/* IMAGE */}
+        {/* LEFT IMAGE */}
         <Image
           src="/image/photo1.avif"
           alt="Signup"
@@ -122,12 +91,13 @@ export default function SignupPage() {
 
         {/* FORM */}
         <div className="max-w-md">
-          <h2 className="text-2xl font-semibold mb-2">
+          <h2 className="text-2xl font-semibold mb-6">
             Create an account
           </h2>
 
           <form onSubmit={handleSignup} className="space-y-5">
             <input
+              type="text"
               placeholder="Name"
               className="border-b w-full py-2"
               value={name}
@@ -136,8 +106,8 @@ export default function SignupPage() {
             />
 
             <input
-              placeholder="Email"
               type="email"
+              placeholder="Email"
               className="border-b w-full py-2"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -145,6 +115,7 @@ export default function SignupPage() {
             />
 
             <input
+              type="tel"
               placeholder="Phone Number"
               className="border-b w-full py-2"
               value={phone}
@@ -169,16 +140,9 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <button
-            onClick={handleGoogleSignup}
-            className="border w-full mt-4 py-3 rounded-md"
-          >
-            Sign up with Google
-          </button>
-
           <p className="text-sm mt-4">
-            Already have account?
-            <Link href="/login" className="text-blue-600 ml-1">
+            Already have an account?
+            <Link href="/auth/login" className="text-blue-600 ml-1">
               Log in
             </Link>
           </p>
